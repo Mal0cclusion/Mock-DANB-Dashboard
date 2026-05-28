@@ -127,7 +127,7 @@
   .hcard-label { font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; }
   .hcard-value { font-size: 2.2rem; font-weight: 800; color: var(--saints-blue); margin: 6px 0 2px; line-height: 1; }
   .hcard.primary .hcard-value { color: var(--saints-blue); }
-  .hcard-sub { font-size: 0.75rem; color: #888; }
+  .hcard- { font-size: 0.75rem; color: #888; }
   .hcard-icon {
     position: absolute; right: 16px; top: 50%;
     transform: translateY(-50%);
@@ -483,10 +483,10 @@ function renderHeadline() {
   const allAvg = students.length ? +(students.map(s => s.avg).reduce((a,b)=>a+b,0)/students.length).toFixed(1) : 0;
 
   const cards = [
-    { label: "Credential Attainment", value: cr + "%", sub: "Passed all 3 exams ≥ 80% · " + activeYear, primary: true, icon: "🏆", badge: cr >= 80 ? "good" : "warn" },
-    { label: "General Chairside Avg", value: gcS.avg + "%", sub: "Pass rate: " + gcS.passRate + "% · High: " + gcS.max + "% · Low: " + gcS.min + "%", icon: "🦷" },
-    { label: "Infection Control Avg", value: icS.avg + "%", sub: "Pass rate: " + icS.passRate + "% · High: " + icS.max + "% · Low: " + icS.min + "%", icon: "🧤" },
-    { label: "Radiation H&S Avg", value: rhsS.avg + "%", sub: "Pass rate: " + rhsS.passRate + "% · High: " + rhsS.max + "% · Low: " + rhsS.min + "%", icon: "☢️" },
+    { label: "Credential Attainment", value: cr + "%", : "Passed all 3 exams ≥ 80% · " + activeYear, primary: true, icon: "🏆", badge: cr >= 80 ? "good" : "warn" },
+    { label: "General Chairside Avg", value: gcS.avg + "%", sub: "Pass rate: " + gcS.passRate + "%<br> · High: " + gcS.max + "%<br> · Low: " + gcS.min + "%", icon: "🦷" },
+    { label: "Infection Control Avg", value: icS.avg + "%", sub: "Pass rate: " + icS.passRate + "%<br> · High: " + icS.max + "%<br> · Low: " + icS.min + "%", icon: "🧤" },
+    { label: "Radiation H&S Avg", value: rhsS.avg + "%", sub: "Pass rate: " + rhsS.passRate + "%<br> · High: " + rhsS.max + "%<br> · Low: " + rhsS.min + "%", icon: "☢️" },
     { label: "Overall Class Average", value: allAvg + "%", sub: "Across all 3 exams · " + students.length + " students", icon: "📊" },
   ];
 
