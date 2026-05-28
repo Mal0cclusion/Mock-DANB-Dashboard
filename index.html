@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CDA Exam Performance Dashboard — Santa Fe College Dental Assisting</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --saints-blue: #003366;
+    --campus-blue: #1578C1;
+    --gold: #F4BB33;
+    --charcoal: #444444;
+    --silver: #CCCCCC;
+    --light-blue: #E8F1FB;
+    --light-gold: #FEF6DF;
+    --pass-green: #2E7D32;
+    --pass-green-bg: #E8F5E9;
+    --warn-amber: #E65100;
+    --warn-amber-bg: #FFF3E0;
+    --white: #ffffff;
+    --bg: #f4f6f9;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--charcoal); }
+
+  /* ── Header ── */
+  header {
+    background: var(--saints-blue);
+    color: white;
+    padding: 0;
+    border-bottom: 4px solid var(--gold);
+  }
+  .header-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 18px 24px 14px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .header-logo {
+    width: 56px; height: 56px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 900; color: var(--saints-blue);
+    flex-shrink: 0;
+    letter-spacing: -1px;
+  }
+  .header-text h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: 0.01em; }
+  .header-text p { font-size: 0.82rem; opacity: 0.8; margin-top: 2px; }
+  .header-badge {
+    margin-left: auto;
+    background: var(--gold);
+    color: var(--saints-blue);
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  /* ── Controls ── */
+  .controls-bar {
+    background: white;
+    border-bottom: 1px solid var(--silver);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .controls-bar .ctrl-label { font-size: 0.82rem; color: var(--saints-blue); font-weight: 600; }
+  .upload-btn {
+    background: var(--campus-blue);
+    color: white;
+    border: none;
+    padding: 7px 18px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .upload-btn:hover { background: var(--saints-blue); }
+  #fileInput { display: none; }
+  .year-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .year-tab {
+    padding: 5px 16px;
+    border-radius: 20px;
+    border: 2px solid var(--campus-blue);
+    background: white;
+    color: var(--campus-blue);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .year-tab.active { background: var(--campus-blue); color: white; }
+  .year-tab:hover:not(.active) { background: var(--light-blue); }
+  .file-status { font-size: 0.78rem; color: #888; margin-left: 4px; }
+
+  /* ── Main layout ── */
+  .main { max-width: 1300px; margin: 0 auto; padding: 22px 24px 40px; }
+
+  /* ── Headline cards ── */
+  .headline-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .hcard {
+    background: white;
+    border-radius: 10px;
+    padding: 18px 20px;
+    box-shadow: var(--card-shadow);
+    border-top: 4px solid var(--campus-blue);
+    position: relative;
+    overflow: hidden;
+  }
+  .hcard.primary { border-top-color: var(--gold); }
+  .hcard-label { font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; }
+  .hcard-value { font-size: 2.2rem; font-weight: 800; color: var(--saints-blue); margin: 6px 0 2px; line-height: 1; }
+  .hcard.primary .hcard-value { color: var(--saints-blue); }
+  .hcard-sub { font-size: 0.75rem; color: #888; }
+  .hcard-icon {
+    position: absolute; right: 16px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 2.4rem; opacity: 0.08;
+  }
+  .pass-badge {
+    display: inline-block;
+    font-size: 0.7rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    margin-top: 4px;
+  }
+  .pass-badge.good { background: var(--pass-green-bg); color: var(--pass-green); }
+  .pass-badge.warn { background: var(--warn-amber-bg); color: var(--warn-amber); }
+
+  /* ── Section title ── */
+  .section-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--saints-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--gold);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Chart grid ── */
+  .chart-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .chart-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 900px) {
+    .chart-grid-2, .chart-grid-3 { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 18px 20px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-title {
+    font-size: 0.82rem; font-weight: 700;
+    color: var(--saints-blue);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .chart-wrap { position: relative; height: 220px; }
+  .chart-wrap.tall { height: 280px; }
+
+  /* ── Score distribution bands ── */
+  .dist-bands {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .dist-band {
+    text-align: center;
+    border-radius: 8px;
+    padding: 10px 4px;
+    font-size: 0.78rem;
+  }
+  .dist-band .band-pct { font-size: 1.4rem; font-weight: 800; }
+  .dist-band .band-lbl { font-size: 0.7rem; margin-top: 2px; opacity: 0.8; }
+  .band-90 { background: #E8F5E9; color: #1B5E20; }
+  .band-80 { background: #E3F2FD; color: #0D47A1; }
+  .band-70 { background: #FFF8E1; color: #E65100; }
+  .band-below { background: #FFEBEE; color: #B71C1C; }
+
+  /* ── Cohort comparison table ── */
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .cmp-table th {
+    background: var(--saints-blue); color: white;
+    padding: 8px 12px; text-align: center; font-weight: 600;
+  }
+  .cmp-table th:first-child { text-align: left; }
+  .cmp-table td { padding: 7px 12px; border-bottom: 1px solid #eee; text-align: center; }
+  .cmp-table td:first-child { text-align: left; font-weight: 600; color: var(--saints-blue); }
+  .cmp-table tr:nth-child(even) td { background: var(--light-blue); }
+  .cmp-table .best { color: var(--pass-green); font-weight: 700; }
+  .cmp-table .worst { color: #C62828; font-weight: 700; }
+
+  /* ── Notes ── */
+  .notes-grid { display: flex; flex-direction: column; gap: 10px; }
+  .note-item {
+    background: var(--light-gold);
+    border-left: 4px solid var(--gold);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+  }
+  .note-year { font-weight: 700; color: var(--saints-blue); font-size: 0.75rem; text-transform: uppercase; }
+  .note-text { color: var(--charcoal); margin-top: 2px; }
+
+  /* ── Footer ── */
+  footer {
+    background: var(--saints-blue);
+    color: rgba(255,255,255,0.65);
+    text-align: center;
+    font-size: 0.75rem;
+    padding: 14px;
+    border-top: 3px solid var(--gold);
+  }
+  footer strong { color: white; }
+
+  /* ── Loading ── */
+  #loading {
+    text-align: center; padding: 60px 20px;
+    color: #888; font-size: 0.95rem;
+  }
+  #dashboard { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>CDA Exam Performance Dashboard</h1>
+      <p>Santa Fe College — Dental Assisting Program &nbsp;|&nbsp; Certified Dental Assistant Examination</p>
+    </div>
+  </div>
+</header>
+
+<div class="controls-bar">
+  <span class="ctrl-label">Data Source:</span>
+  <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+    &#8593; Upload Excel File
+  </button>
+  <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="loadFile(event)">
+  <span class="file-status" id="fileStatus">No file loaded — upload CDA_Exam_Data.xlsx</span>
+  <div class="year-tabs" id="yearTabs"></div>
+</div>
+
+<div class="main">
+  <div id="loading">
+    <p>&#8593; Upload your CDA Exam Excel file to load the dashboard.</p>
+    <p style="margin-top:8px;font-size:0.8rem;">Expected format: one sheet per year, columns A–E (Student, General Chairside, Infection Control, Radiation H&S, Average).</p>
+  </div>
+  <div id="dashboard">
+
+    <!-- Headline metrics -->
+    <div class="headline-grid" id="headlineGrid"></div>
+
+    <!-- Row 1: Credential attainment trend + Exam averages trend -->
+    <div class="section-title">&#128200; Year-Over-Year Trends</div>
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="card-title">&#127941; Credential Attainment Rate (All 3 Exams ≥ 80%)</div>
+        <div class="chart-wrap"><canvas id="credentialTrendChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">&#128200; Class Average by Exam — All Years</div>
+        <div class="chart-wrap"><canvas id="avgTrendChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 2: Score distribution bands + Weakest link -->
+    <div class="section-title">&#128269; Current Year Analysis</div>
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="card-title">&#127783; Score Distribution Bands</div>
+        <div id="distBands"></div>
+        <div class="chart-wrap" style="height:180px; margin-top:14px;"><canvas id="distChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">&#128308; Exam Difficulty Ranking — Which Exam Challenges Students Most?</div>
+        <div class="chart-wrap tall"><canvas id="difficultyChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 3: Pass rate per exam + First-attempt tracking -->
+    <div class="chart-grid-2">
+      <div class="card">
+        <div class="card-title">&#9989; % of Students Scoring ≥ 80% — Per Exam</div>
+        <div class="chart-wrap"><canvas id="passRateChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">&#128683; At-Risk Count — Students Below 80% Per Exam</div>
+        <div class="chart-wrap"><canvas id="atRiskChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Cohort comparison table (all years) -->
+    <div class="section-title">&#128203; Cohort Comparison — All Years</div>
+    <div class="card" style="margin-bottom:24px;">
+      <div id="cohortTable"></div>
+    </div>
+
+    <!-- Curriculum notes -->
+    <div class="section-title">&#128221; Curriculum Notes & Interventions</div>
+    <div class="card" style="margin-bottom:24px;">
+      <div class="notes-grid" id="notesGrid"></div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <strong>Santa Fe College — Dental Assisting Program</strong> &nbsp;|&nbsp;
+  CDA Exam Dashboard &nbsp;|&nbsp; For internal program assessment and CODA accreditation documentation
+</footer>
+
+<script>
+const EXAMS = ["General Chairside", "Infection Control", "Radiation H&S"];
+const SF_BLUE = "#003366";
+const CAMPUS_BLUE = "#1578C1";
+const GOLD = "#F4BB33";
+const SILVER = "#CCCCCC";
+const EXAM_COLORS = ["#1578C1", "#2E7D32", "#E65100"];
+const THRESHOLD = 80;
+
+let allData = {};   // { year: [ {student, gc, ic, rhs, avg} ] }
+let allNotes = {};  // { year: "notes text" }
+let years = [];
+let activeYear = null;
+let charts = {};
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+// ── File loading ──────────────────────────────────────────────────────────────
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  document.getElementById("fileStatus").textContent = "Loading " + file.name + "...";
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: "array" });
+      allData = {}; allNotes = {}; years = [];
+      wb.SheetNames.forEach(name => {
+        if (!/^\d{4}$/.test(name.trim())) return;
+        const yr = name.trim();
+        const ws = wb.Sheets[name];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        const students = [];
+        let notesText = "";
+        let inNotes = false;
+        rows.forEach((row, i) => {
+          if (i < 2) return; // skip title + header
+          const a = String(row[0] || "").trim();
+          if (a.toLowerCase().includes("summary") || a.toLowerCase().includes("class avg") ||
+              a.toLowerCase().includes("lowest") || a.toLowerCase().includes("% scored") ||
+              a.toLowerCase().includes("credential")) return;
+          if (a.toLowerCase().includes("curriculum") || a.toLowerCase().includes("notes")) {
+            inNotes = true; return;
+          }
+          if (inNotes) { if (a && !a.includes("Enter curriculum")) notesText += a + " "; return; }
+          const b = parseFloat(row[1]);
+          const c = parseFloat(row[2]);
+          const d = parseFloat(row[3]);
+          if (a && !isNaN(b) && !isNaN(c) && !isNaN(d)) {
+            students.push({ student: a, gc: b, ic: c, rhs: d,
+              avg: parseFloat(((b + c + d) / 3).toFixed(1)) });
+          }
+        });
+        if (students.length) {
+          allData[yr] = students;
+          allNotes[yr] = notesText.trim() || "";
+          years.push(yr);
+        }
+      });
+      years.sort();
+      document.getElementById("fileStatus").textContent = file.name + " — " + years.length + " year(s) loaded";
+      buildYearTabs();
+      activeYear = years[years.length - 1];
+      setActiveTab(activeYear);
+      renderAll();
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+    } catch(err) {
+      document.getElementById("fileStatus").textContent = "Error reading file: " + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function buildYearTabs() {
+  const container = document.getElementById("yearTabs");
+  container.innerHTML = "";
+  years.forEach(yr => {
+    const btn = document.createElement("button");
+    btn.className = "year-tab";
+    btn.textContent = yr;
+    btn.onclick = () => { activeYear = yr; setActiveTab(yr); renderCurrentYear(); };
+    btn.id = "tab-" + yr;
+    container.appendChild(btn);
+  });
+}
+
+function setActiveTab(yr) {
+  document.querySelectorAll(".year-tab").forEach(t => t.classList.remove("active"));
+  const el = document.getElementById("tab-" + yr);
+  if (el) el.classList.add("active");
+}
+
+// ── Stats helpers ─────────────────────────────────────────────────────────────
+function stats(values) {
+  const v = values.filter(x => !isNaN(x));
+  if (!v.length) return { avg: 0, min: 0, max: 0, passRate: 0, count: v.length };
+  const avg = v.reduce((a, b) => a + b, 0) / v.length;
+  const min = Math.min(...v);
+  const max = Math.max(...v);
+  const passRate = v.filter(x => x >= THRESHOLD).length / v.length;
+  return { avg: +avg.toFixed(1), min: +min.toFixed(1), max: +max.toFixed(1), passRate: +(passRate * 100).toFixed(1), count: v.length };
+}
+
+function credentialRate(students) {
+  if (!students.length) return 0;
+  const passed = students.filter(s => s.gc >= THRESHOLD && s.ic >= THRESHOLD && s.rhs >= THRESHOLD).length;
+  return +(passed / students.length * 100).toFixed(1);
+}
+
+function atRisk(students, key) {
+  return students.filter(s => s[key] < THRESHOLD).length;
+}
+
+// ── Render all ────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderHeadline();
+  renderTrendCharts();
+  renderCurrentYear();
+  renderCohortTable();
+  renderNotes();
+}
+
+function renderCurrentYear() {
+  renderHeadline();
+  renderDistribution();
+  renderDifficulty();
+  renderPassRate();
+  renderAtRisk();
+}
+
+// ── Headline metrics ──────────────────────────────────────────────────────────
+function renderHeadline() {
+  const students = allData[activeYear] || [];
+  const cr = credentialRate(students);
+  const gcS = stats(students.map(s => s.gc));
+  const icS = stats(students.map(s => s.ic));
+  const rhsS = stats(students.map(s => s.rhs));
+  const allAvg = students.length ? +(students.map(s => s.avg).reduce((a,b)=>a+b,0)/students.length).toFixed(1) : 0;
+
+  const cards = [
+    { label: "Credential Attainment", value: cr + "%", sub: "Passed all 3 exams ≥ 80% · " + activeYear, primary: true, icon: "🏆", badge: cr >= 80 ? "good" : "warn" },
+    { label: "General Chairside Avg", value: gcS.avg + "%", sub: "Pass rate: " + gcS.passRate + "% · High: " + gcS.max + "% · Low: " + gcS.min + "%", icon: "🦷" },
+    { label: "Infection Control Avg", value: icS.avg + "%", sub: "Pass rate: " + icS.passRate + "% · High: " + icS.max + "% · Low: " + icS.min + "%", icon: "🧤" },
+    { label: "Radiation H&S Avg", value: rhsS.avg + "%", sub: "Pass rate: " + rhsS.passRate + "% · High: " + rhsS.max + "% · Low: " + rhsS.min + "%", icon: "☢️" },
+    { label: "Overall Class Average", value: allAvg + "%", sub: "Across all 3 exams · " + students.length + " students", icon: "📊" },
+  ];
+
+  const grid = document.getElementById("headlineGrid");
+  grid.innerHTML = "";
+  cards.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "hcard" + (c.primary ? " primary" : "");
+    div.innerHTML = `
+      <div class="hcard-label">${c.label}</div>
+      <div class="hcard-value">${c.value}</div>
+      <div class="hcard-sub">${c.sub}</div>
+      ${c.badge ? `<span class="pass-badge ${c.badge}">${c.badge === "good" ? "✓ Above Threshold" : "⚠ Below Threshold"}</span>` : ""}
+      <div class="hcard-icon">${c.icon}</div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+// ── Trend charts ──────────────────────────────────────────────────────────────
+function renderTrendCharts() {
+  const credRates = years.map(yr => credentialRate(allData[yr]));
+  const gcAvgs = years.map(yr => stats(allData[yr].map(s => s.gc)).avg);
+  const icAvgs = years.map(yr => stats(allData[yr].map(s => s.ic)).avg);
+  const rhsAvgs = years.map(yr => stats(allData[yr].map(s => s.rhs)).avg);
+
+  destroyChart("credentialTrend");
+  const ctx1 = document.getElementById("credentialTrendChart").getContext("2d");
+  charts["credentialTrend"] = new Chart(ctx1, {
+    type: "line",
+    data: {
+      labels: years,
+      datasets: [{
+        label: "Credential Rate (%)",
+        data: credRates,
+        borderColor: GOLD,
+        backgroundColor: "rgba(244,187,51,0.15)",
+        borderWidth: 3,
+        pointBackgroundColor: GOLD,
+        pointRadius: 6,
+        tension: 0.3,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.parsed.y + "%" } } },
+      scales: {
+        y: { min: 0, max: 100, ticks: { callback: v => v + "%" },
+          grid: { color: "#eee" },
+          title: { display: true, text: "% Students Credentialed" } },
+        x: { grid: { display: false } }
+      },
+      elements: { line: { borderWidth: 3 } }
+    }
+  });
+
+  destroyChart("avgTrend");
+  const ctx2 = document.getElementById("avgTrendChart").getContext("2d");
+  charts["avgTrend"] = new Chart(ctx2, {
+    type: "line",
+    data: {
+      labels: years,
+      datasets: [
+        { label: "General Chairside", data: gcAvgs, borderColor: EXAM_COLORS[0], backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 5, tension: 0.3 },
+        { label: "Infection Control", data: icAvgs, borderColor: EXAM_COLORS[1], backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 5, tension: 0.3 },
+        { label: "Radiation H&S", data: rhsAvgs, borderColor: EXAM_COLORS[2], backgroundColor: "transparent", borderWidth: 2.5, pointRadius: 5, tension: 0.3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        y: { min: 50, max: 100, ticks: { callback: v => v + "%" }, grid: { color: "#eee" } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Distribution bands ────────────────────────────────────────────────────────
+function renderDistribution() {
+  const students = allData[activeYear] || [];
+  const allScores = students.flatMap(s => [s.gc, s.ic, s.rhs]);
+  const total = allScores.length || 1;
+  const b90 = allScores.filter(x => x >= 90).length;
+  const b80 = allScores.filter(x => x >= 80 && x < 90).length;
+  const b70 = allScores.filter(x => x >= 70 && x < 80).length;
+  const bBelow = allScores.filter(x => x < 70).length;
+
+  document.getElementById("distBands").innerHTML = `
+    <div class="dist-bands">
+      <div class="dist-band band-90">
+        <div class="band-pct">${Math.round(b90/total*100)}%</div>
+        <div class="band-lbl">90–100%<br>Excelling</div>
+      </div>
+      <div class="dist-band band-80">
+        <div class="band-pct">${Math.round(b80/total*100)}%</div>
+        <div class="band-lbl">80–89%<br>Passing</div>
+      </div>
+      <div class="dist-band band-70">
+        <div class="band-pct">${Math.round(b70/total*100)}%</div>
+        <div class="band-lbl">70–79%<br>Near Miss</div>
+      </div>
+      <div class="dist-band band-below">
+        <div class="band-pct">${Math.round(bBelow/total*100)}%</div>
+        <div class="band-lbl">&lt;70%<br>Intervention</div>
+      </div>
+    </div>`;
+
+  destroyChart("dist");
+  const ctx = document.getElementById("distChart").getContext("2d");
+  charts["dist"] = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["General Chairside", "Infection Control", "Radiation H&S"],
+      datasets: [
+        { label: "90–100%", data: [
+            students.filter(s=>s.gc>=90).length,
+            students.filter(s=>s.ic>=90).length,
+            students.filter(s=>s.rhs>=90).length],
+          backgroundColor: "#A5D6A7" },
+        { label: "80–89%", data: [
+            students.filter(s=>s.gc>=80&&s.gc<90).length,
+            students.filter(s=>s.ic>=80&&s.ic<90).length,
+            students.filter(s=>s.rhs>=80&&s.rhs<90).length],
+          backgroundColor: "#90CAF9" },
+        { label: "70–79%", data: [
+            students.filter(s=>s.gc>=70&&s.gc<80).length,
+            students.filter(s=>s.ic>=70&&s.ic<80).length,
+            students.filter(s=>s.rhs>=70&&s.rhs<80).length],
+          backgroundColor: "#FFE082" },
+        { label: "<70%", data: [
+            students.filter(s=>s.gc<70).length,
+            students.filter(s=>s.ic<70).length,
+            students.filter(s=>s.rhs<70).length],
+          backgroundColor: "#EF9A9A" },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10 } } } },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, ticks: { stepSize: 1 }, title: { display: true, text: "# Students" } }
+      }
+    }
+  });
+}
+
+// ── Difficulty ranking ────────────────────────────────────────────────────────
+function renderDifficulty() {
+  const allYearsData = years.flatMap(yr => allData[yr] || []);
+  const gcAll = allYearsData.map(s => s.gc);
+  const icAll = allYearsData.map(s => s.ic);
+  const rhsAll = allYearsData.map(s => s.rhs);
+  const avgGC = +(gcAll.reduce((a,b)=>a+b,0)/gcAll.length).toFixed(1);
+  const avgIC = +(icAll.reduce((a,b)=>a+b,0)/icAll.length).toFixed(1);
+  const avgRHS = +(rhsAll.reduce((a,b)=>a+b,0)/rhsAll.length).toFixed(1);
+  const avgPassGC = +(gcAll.filter(x=>x<THRESHOLD).length/gcAll.length*100).toFixed(1);
+  const avgPassIC = +(icAll.filter(x=>x<THRESHOLD).length/icAll.length*100).toFixed(1);
+  const avgPassRHS = +(rhsAll.filter(x=>x<THRESHOLD).length/rhsAll.length*100).toFixed(1);
+
+  destroyChart("difficulty");
+  const ctx = document.getElementById("difficultyChart").getContext("2d");
+  charts["difficulty"] = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["General Chairside", "Infection Control", "Radiation H&S"],
+      datasets: [
+        { label: "Multi-Year Avg Score (%)", data: [avgGC, avgIC, avgRHS],
+          backgroundColor: [EXAM_COLORS[0]+"CC", EXAM_COLORS[1]+"CC", EXAM_COLORS[2]+"CC"],
+          borderColor: EXAM_COLORS,
+          borderWidth: 2,
+          yAxisID: "y" },
+        { label: "% Students Below 80% (all years)", data: [avgPassGC, avgPassIC, avgPassRHS],
+          type: "line",
+          borderColor: "#B71C1C",
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          borderDash: [5, 4],
+          pointRadius: 6,
+          pointBackgroundColor: "#B71C1C",
+          yAxisID: "y2" }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { min: 50, max: 100, ticks: { callback: v => v + "%" }, grid: { color: "#eee" },
+          title: { display: true, text: "Avg Score (%)" } },
+        y2: { position: "right", min: 0, max: 50, ticks: { callback: v => v + "%" },
+          grid: { display: false }, title: { display: true, text: "% Below 80%" } }
+      }
+    }
+  });
+}
+
+// ── Pass rate per exam ────────────────────────────────────────────────────────
+function renderPassRate() {
+  const students = allData[activeYear] || [];
+  const gcPass = +(students.filter(s=>s.gc>=THRESHOLD).length/students.length*100).toFixed(1);
+  const icPass = +(students.filter(s=>s.ic>=THRESHOLD).length/students.length*100).toFixed(1);
+  const rhsPass = +(students.filter(s=>s.rhs>=THRESHOLD).length/students.length*100).toFixed(1);
+
+  destroyChart("passRate");
+  const ctx = document.getElementById("passRateChart").getContext("2d");
+  charts["passRate"] = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["General Chairside", "Infection Control", "Radiation H&S"],
+      datasets: [{
+        label: "% ≥ 80%",
+        data: [gcPass, icPass, rhsPass],
+        backgroundColor: [gcPass>=80?"#A5D6A7":"#EF9A9A", icPass>=80?"#A5D6A7":"#EF9A9A", rhsPass>=80?"#A5D6A7":"#EF9A9A"],
+        borderColor: [gcPass>=80?"#2E7D32":"#C62828", icPass>=80?"#2E7D32":"#C62828", rhsPass>=80?"#2E7D32":"#C62828"],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        annotation: {},
+        tooltip: { callbacks: { label: ctx => ctx.parsed.y + "% scored ≥ 80%" } } },
+      scales: {
+        y: { min: 0, max: 100, ticks: { callback: v => v + "%" }, grid: { color: "#eee" } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── At-risk chart ─────────────────────────────────────────────────────────────
+function renderAtRisk() {
+  destroyChart("atRisk");
+  const ctx = document.getElementById("atRiskChart").getContext("2d");
+  const gcRisk = years.map(yr => atRisk(allData[yr]||[], "gc"));
+  const icRisk = years.map(yr => atRisk(allData[yr]||[], "ic"));
+  const rhsRisk = years.map(yr => atRisk(allData[yr]||[], "rhs"));
+
+  charts["atRisk"] = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: years,
+      datasets: [
+        { label: "General Chairside", data: gcRisk, backgroundColor: EXAM_COLORS[0]+"BB" },
+        { label: "Infection Control", data: icRisk, backgroundColor: EXAM_COLORS[1]+"BB" },
+        { label: "Radiation H&S", data: rhsRisk, backgroundColor: EXAM_COLORS[2]+"BB" },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ": " + ctx.parsed.y + " student(s)" } } },
+      scales: {
+        y: { ticks: { stepSize: 1 }, grid: { color: "#eee" },
+          title: { display: true, text: "# Students Below 80%" } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Cohort comparison table ───────────────────────────────────────────────────
+function renderCohortTable() {
+  const cols = ["Year", "N", "GC Avg", "IC Avg", "RHS Avg", "Overall Avg", "GC Pass%", "IC Pass%", "RHS Pass%", "Credential Rate"];
+  const rows = years.map(yr => {
+    const s = allData[yr] || [];
+    const gc = stats(s.map(x=>x.gc));
+    const ic = stats(s.map(x=>x.ic));
+    const rhs = stats(s.map(x=>x.rhs));
+    const avg = s.length ? +(s.map(x=>x.avg).reduce((a,b)=>a+b,0)/s.length).toFixed(1) : 0;
+    return { yr, n: s.length, gcAvg: gc.avg, icAvg: ic.avg, rhsAvg: rhs.avg, overallAvg: avg,
+      gcPass: gc.passRate, icPass: ic.passRate, rhsPass: rhs.passRate, cr: credentialRate(s) };
+  });
+
+  // Find best/worst for credential rate
+  const crVals = rows.map(r => r.cr);
+  const bestCR = Math.max(...crVals);
+  const worstCR = Math.min(...crVals);
+
+  let html = `<table class="cmp-table"><thead><tr>`;
+  cols.forEach(c => html += `<th>${c}</th>`);
+  html += `</tr></thead><tbody>`;
+  rows.forEach(r => {
+    const crClass = r.cr === bestCR ? "best" : (r.cr === worstCR && years.length > 1 ? "worst" : "");
+    html += `<tr>
+      <td>${r.yr}</td><td>${r.n}</td>
+      <td>${r.gcAvg}%</td><td>${r.icAvg}%</td><td>${r.rhsAvg}%</td>
+      <td><strong>${r.overallAvg}%</strong></td>
+      <td>${r.gcPass}%</td><td>${r.icPass}%</td><td>${r.rhsPass}%</td>
+      <td class="${crClass}"><strong>${r.cr}%</strong></td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  document.getElementById("cohortTable").innerHTML = html;
+}
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+function renderNotes() {
+  const grid = document.getElementById("notesGrid");
+  const items = years.map(yr => {
+    const note = allNotes[yr] || "";
+    return `<div class="note-item">
+      <div class="note-year">${yr}</div>
+      <div class="note-text">${note || "<em style='color:#aaa'>No curriculum notes recorded for this year. Add notes to the Excel sheet and re-upload.</em>"}</div>
+    </div>`;
+  });
+  grid.innerHTML = items.join("") || "<p style='color:#aaa;font-size:0.82rem;'>No notes found.</p>";
+}
+</script>
+</body>
+</html>
