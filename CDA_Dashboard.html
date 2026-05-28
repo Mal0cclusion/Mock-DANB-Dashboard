@@ -485,9 +485,9 @@ function renderHeadline() {
 
   const cards = [
     { label: "Credential Attainment", value: cr + "%", sub: "Passed all 3 exams ≥ 80% · " + activeYear, primary: true, icon: "🏆", badge: cr >= 80 ? "good" : "warn" },
-    { label: "General Chairside Avg", value: gcS.avg + "%", sub: "Pass rate: " + gcS.passRate + "% · Low: " + gcS.min + "%", icon: "🦷" },
-    { label: "Infection Control Avg", value: icS.avg + "%", sub: "Pass rate: " + icS.passRate + "% · Low: " + icS.min + "%", icon: "🧤" },
-    { label: "Radiation H&S Avg", value: rhsS.avg + "%", sub: "Pass rate: " + rhsS.passRate + "% · Low: " + rhsS.min + "%", icon: "☢️" },
+    { label: "General Chairside Avg", value: gcS.avg + "%", sub: "Pass rate: " + gcS.passRate + "%<br> · Low: " + gcS.min + "%", icon: "🦷" },
+    { label: "Infection Control Avg", value: icS.avg + "%", sub: "Pass rate: " + icS.passRate + "%<br> · Low: " + icS.min + "%", icon: "🧤" },
+    { label: "Radiation H&S Avg", value: rhsS.avg + "%", sub: "Pass rate: " + rhsS.passRate + "%<br> · Low: " + rhsS.min + "%", icon: "☢️" },
     { label: "Overall Class Average", value: allAvg + "%", sub: "Across all 3 exams · " + students.length + " students", icon: "📊" },
   ];
 
